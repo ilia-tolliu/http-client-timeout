@@ -27,22 +27,26 @@ public class ClientApp {
   }
 
   static void runWithJdkClient() {
+    System.out.println("Running with JDK HTTP Client\n");
+
     var jdkClientImpl = new JdkClientImpl();
     var jdkClientStart = Instant.now();
 
     jdkClientImpl.getSlowResource(REQUEST_TIMEOUT);
 
     var jdkClientElapsed = Duration.between(jdkClientStart, Instant.now());
-    System.out.printf("%n%nJDK HTTP Client processed the request in %s%n", jdkClientElapsed);
+    System.out.printf("%n%nJDK HTTP Client processed the request in %s%n%n", jdkClientElapsed);
   }
 
   static void runWithApacheClient() {
+    System.out.println("Running with Apache HTTP Client\n");
+
     var apacheClientImpl = new ApacheClientImpl();
     var apacheClientStart = Instant.now();
 
     apacheClientImpl.getSlowResource(REQUEST_TIMEOUT);
 
     var jdkClientElapsed = Duration.between(apacheClientStart, Instant.now());
-    System.out.printf("%n%nApache HTTP Client processed the request in %s%n", jdkClientElapsed);
+    System.out.printf("%n%nApache HTTP Client processed the request in %s%n%n", jdkClientElapsed);
   }
 }
