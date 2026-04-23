@@ -31,3 +31,15 @@ replay_pid*
 
 # Ignore Gradle build output directory
 build
+
+# patch
+*.orig
+*.rej
+
+# Local environment
+.env
+
+# Plugin directory
+/.quarkus/cli/plugins/
+# TLS Certificates
+.certs/

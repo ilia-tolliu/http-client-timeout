@@ -10,6 +10,7 @@ plugins {
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -34,4 +35,9 @@ java {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    options.encoding = "UTF-8"
+    options.compilerArgs.add("-parameters")
 }
