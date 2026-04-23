@@ -8,5 +8,5 @@ dependencies {
 }
 
 application {
-    mainClass = "org.example.app.App"
+    mainClass = "example.client.app.ClientApp"
 }
