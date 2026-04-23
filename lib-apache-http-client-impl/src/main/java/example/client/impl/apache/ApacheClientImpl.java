@@ -16,7 +16,7 @@ public class ApacheClientImpl {
     try (var client = HttpClientBuilder.create().build()) {
       var request = new HttpGet(URI.create("http://localhost:8000/slow"));
       var requestConfig = RequestConfig.custom()
-        .setConnectionRequestTimeout(requestTimeout.toMillisPart())
+        .setSocketTimeout(requestTimeout.toMillisPart())
         .build();
       request.setConfig(requestConfig);
 
