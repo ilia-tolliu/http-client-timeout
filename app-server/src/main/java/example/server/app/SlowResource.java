@@ -3,6 +3,8 @@ package example.server.app;
 import java.io.PrintStream;
 import java.time.Duration;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -15,25 +17,38 @@ import static java.lang.Thread.currentThread;
 @Path("/slow")
 public class SlowResource {
 
+  @ConfigProperty(name = "example.server.app.delay.initial")
+  Duration initialDelay;
+
+  @ConfigProperty(name = "example.server.app.delay.running")
+  Duration runningDelay;
+
   @GET
   @Produces(MediaType.TEXT_PLAIN)
   public Response hello() {
+    sleep(initialDelay);
+
     StreamingOutput streamingOutput = outputStream -> {
       try (var printStream = new PrintStream(outputStream)) {
         RESPONSE.lines()
           .forEach(line -> {
             printStream.println(line);
             printStream.flush();
-            try {
-              Thread.sleep(Duration.ofMillis(50));
-            } catch (InterruptedException e) {
-              currentThread().interrupt();
-            }
+
+            sleep(runningDelay);
           });
       }
     };
 
     return Response.ok(streamingOutput).build();
+  }
+
+  private void sleep(Duration duration) {
+    try {
+      Thread.sleep(duration);
+    } catch (InterruptedException e) {
+      currentThread().interrupt();
+    }
   }
 
   private static final String RESPONSE = """
