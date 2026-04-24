@@ -42,3 +42,18 @@ There is one client (**request timeout**) and two server (**initial delay** and 
 1. First, set **request timeout** so that it is larger than **initial delay** plus 100 times **running delay**. This corresponds to a happy case.
 2. Next, set **request timeout** slightly larger than **initial delay**, but much less than in the first case. What would you expect?
 3. Last, set **request timeout** smaller than **initial delay**. A request should fail
+
+## The Solution
+
+Currently implemented for JDK HTTP Client.
+
+Once request processing starts, there is a hard deadline.
+
+If the deadline is reached, the request processing must stop.
+If it happened when the response body bytes already started arriving, this should be stopped as well. And the code should return.
+
+To distinguish between different timeouts, there are now two
+constants in `app-client/src/main/java/example/client/app/ClientApp.java`:
+
+* **READ_TIMEOUT** – in the case of JDK HTTP Client it is the timeout to receive the first byte of the response
+* **REQUEST_TIMEOUT** – full timeout for the method that makes the request 
