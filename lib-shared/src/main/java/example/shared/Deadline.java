@@ -9,9 +9,9 @@ public class Deadline {
 
   private final Instant deadline;
 
-  private boolean isCancelledByDeadline = false;
+  private volatile boolean isCancelledByDeadline = false;
 
-  private boolean isCancelled = false;
+  private volatile boolean isCancelled = false;
 
   public Deadline(Instant deadline) {
     this.deadline = deadline;
