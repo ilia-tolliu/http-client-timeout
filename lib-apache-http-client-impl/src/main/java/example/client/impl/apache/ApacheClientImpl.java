@@ -33,7 +33,7 @@ public class ApacheClientImpl {
       registerDeadlineCancellation(deadline, request::abort);
 
       var requestConfig = RequestConfig.custom()
-        .setSocketTimeout(socketTimeout.toMillisPart())
+        .setSocketTimeout((int) socketTimeout.toMillis())
         .build();
       request.setConfig(requestConfig);
 
