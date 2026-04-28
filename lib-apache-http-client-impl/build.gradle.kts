@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation("org.apache.httpcomponents:httpclient:4.5.13")
+    implementation(project(":lib-shared"))
 }

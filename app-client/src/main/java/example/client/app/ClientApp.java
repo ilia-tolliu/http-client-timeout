@@ -2,7 +2,6 @@ package example.client.app;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,27 +10,23 @@ import example.client.impl.apache.ApacheClientImpl;
 import example.client.impl.jdk.JdkClientImpl;
 import example.shared.DeadlineException;
 
+import static java.lang.Thread.sleep;
+
 public class ClientApp {
 
   private static final Duration READ_TIMEOUT = Duration.ofMillis(200);
-  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientApp.class);
 
   public static void main(String[] args) throws InterruptedException {
-    try {
-      runWithJdkClient();
-    } catch (Exception e) {
-      LOGGER.error("JDK HTTP Client failed", e);
-    }
+    runWithJdkClient();
 
-    try {
-      runWithApacheClient();
-    } catch (Exception e) {
-      LOGGER.error("Apache HTTP Client failed", e);
-    }
+    sleep(Duration.ofSeconds(5));
 
-    Thread.sleep(Duration.ofSeconds(10));
+    runWithApacheClient();
+
+    sleep(Duration.ofSeconds(5));
   }
 
   static void runWithJdkClient() {
@@ -50,12 +45,13 @@ public class ClientApp {
   static void runWithApacheClient() {
     LOGGER.info("Running with Apache HTTP Client");
 
-    var apacheClientImpl = new ApacheClientImpl();
-    var apacheClientStart = Instant.now();
+    try {
+      var apacheClientImpl = new ApacheClientImpl();
+      var response = apacheClientImpl.getSlowResource(READ_TIMEOUT, REQUEST_TIMEOUT);
 
-    apacheClientImpl.getSlowResource(READ_TIMEOUT, REQUEST_TIMEOUT);
-
-    var jdkClientElapsed = Duration.between(apacheClientStart, Instant.now());
-    LOGGER.info("Apache HTTP Client processed the request in {}", jdkClientElapsed);
+      LOGGER.info("Apache HTTP Client processed complete request in {}", response.duration());
+    } catch (DeadlineException e) {
+      LOGGER.error("Apache HTTP Client got incomplete request in {}", e.getIncompleteResponse().duration(), e);
+    }
   }
 }
