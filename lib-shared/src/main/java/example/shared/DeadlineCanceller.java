@@ -17,19 +17,21 @@ public class DeadlineCanceller {
       @Override
       public void run() {
         var now = Instant.now();
-        for (var i = 0; i < deadlineQueue.size(); i++) {
-          var entry = deadlineQueue.peek();
+
+        var iterator = deadlineQueue.iterator();
+        while (iterator.hasNext()) {
+          var entry = iterator.next();
           if (entry.deadline.getDeadline().isAfter(now)) {
             continue;
           }
 
           if (entry.deadline.isCancelled()) {
-            deadlineQueue.remove();
+            iterator.remove();
             continue;
           }
 
           entry.deadline.cancelByDeadline();
-          deadlineQueue.remove();
+          iterator.remove();
           entry.onDeadline.run();
         }
       }
