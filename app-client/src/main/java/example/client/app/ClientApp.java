@@ -15,7 +15,7 @@ import static java.lang.Thread.sleep;
 public class ClientApp {
 
   private static final Duration READ_TIMEOUT = Duration.ofMillis(200);
-  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientApp.class);
 
