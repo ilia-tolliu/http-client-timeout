@@ -1,7 +1,6 @@
 package example.client.impl.jdk;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -9,16 +8,20 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.Temporal;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
+import example.shared.CompletedResponse;
+import example.shared.Deadline;
+import example.shared.DeadlineException;
+import example.shared.IncompleteResponse;
+
+import static example.shared.DeadlineCanceller.registerDeadlineCancellation;
+import static example.shared.Util.closeUnchecked;
+import static example.shared.Util.durationSince;
+import static java.lang.Character.LINE_SEPARATOR;
 import static java.util.Objects.isNull;
 
 public class JdkClientImpl {
+
   private final HttpClient client;
 
   public JdkClientImpl(HttpClient client) {
@@ -29,8 +32,7 @@ public class JdkClientImpl {
     Duration firstByteTimeout,
     Duration fullTimeout
   ) {
-    var start = Instant.now();
-    var deadline = start.plus(fullTimeout);
+    var deadline = Deadline.after(fullTimeout);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:8000/slow"))
@@ -43,15 +45,12 @@ public class JdkClientImpl {
       int statusCode = httpResponse.statusCode();
       var bodyBuilder = new StringBuilder();
 
-      var canceller = new ReadCanceller();
-
       try (
         var in = httpResponse.body();
-        canceller;
         var streamReader = new InputStreamReader(in);
         var lineReader = new BufferedReader(streamReader)
       ) {
-        canceller.start(in, deadline);
+        registerDeadlineCancellation(deadline, () -> closeUnchecked(in));
 
         String line;
         while (true) {
@@ -60,97 +59,31 @@ public class JdkClientImpl {
             break;
           }
 
-          bodyBuilder.append(line);
+          bodyBuilder.append(line).append(LINE_SEPARATOR);
           System.out.println(line);
         }
       } catch (IOException e) {
-        if (canceller.isCancelled()) {
-          var response = new IncompleteResponse(statusCode, bodyBuilder.toString(), durationFrom(start));
-          throw new RequestTimeoutException(response, e);
+        if (deadline.isCancelledByDeadline()) {
+          var response = new IncompleteResponse(
+            statusCode,
+            bodyBuilder.toString(),
+            durationSince(deadline.getStartedAt())
+          );
+          throw new DeadlineException(response, e);
         }
 
         throw e;
+      } finally {
+        deadline.cancel();
       }
 
-      return new CompletedResponse(statusCode, bodyBuilder.toString(), durationFrom(start));
+      return new CompletedResponse(
+        statusCode,
+        bodyBuilder.toString(),
+        durationSince(deadline.getStartedAt())
+      );
     } catch (IOException | InterruptedException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("JDK HTTP Client request failed", e);
     }
-  }
-
-  private Duration durationFrom(Temporal start) {
-    return Duration.between(start, Instant.now());
-  }
-
-  public record CompletedResponse(
-    int statusCode,
-    String body,
-    Duration duration
-  ) {
-  }
-
-  public record IncompleteResponse(
-    int statusCode,
-    String incompleteBody,
-    Duration duration
-  ) {
-  }
-
-  public static class RequestTimeoutException extends RuntimeException {
-    private final IncompleteResponse incompleteResponse;
-
-    public RequestTimeoutException(IncompleteResponse incompleteResponse,  Exception cause) {
-      super(cause);
-
-      this.incompleteResponse = incompleteResponse;
-    }
-
-    public IncompleteResponse getIncompleteResponse() {
-      return incompleteResponse;
-    }
-  }
-
-}
-
-class ReadCanceller implements AutoCloseable {
-  private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-  private ScheduledFuture<?> future  = null;
-  private volatile boolean isCancelled = false;
-
-  void start(Closeable cancellable, Temporal deadline) {
-    var duration = Duration.between(Instant.now(), deadline);
-    if (!duration.isPositive()) {
-      cancel(cancellable);
-      return;
-    }
-
-    future = scheduler.schedule(
-      () -> cancel(cancellable),
-      duration.toMillis(),
-      TimeUnit.MILLISECONDS
-    );
-  }
-
-  private void cancel(Closeable cancellable) {
-    try {
-      isCancelled = true;
-      cancellable.close();
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to cancel", e);
-    }
-  }
-
-  boolean isCancelled() {
-    return isCancelled;
-  }
-
-  @Override
-  public void close() {
-    if (isNull(future)) {
-      return;
-    }
-
-    future.cancel(false);
   }
 }

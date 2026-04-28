@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import example.client.impl.apache.ApacheClientImpl;
 import example.client.impl.jdk.JdkClientImpl;
-import example.client.impl.jdk.JdkClientImpl.RequestTimeoutException;
+import example.shared.DeadlineException;
 
 public class ClientApp {
 
@@ -42,7 +42,7 @@ public class ClientApp {
       var response = jdkClientImpl.getSlowResource(READ_TIMEOUT, REQUEST_TIMEOUT);
 
       LOGGER.info("JDK HTTP Client processed complete request in {}", response.duration());
-    } catch (RequestTimeoutException e) {
+    } catch (DeadlineException e) {
       LOGGER.error("JDK HTTP Client got incomplete request in {}", e.getIncompleteResponse().duration(), e);
     }
   }
@@ -53,7 +53,7 @@ public class ClientApp {
     var apacheClientImpl = new ApacheClientImpl();
     var apacheClientStart = Instant.now();
 
-    apacheClientImpl.getSlowResource(REQUEST_TIMEOUT);
+    apacheClientImpl.getSlowResource(READ_TIMEOUT, REQUEST_TIMEOUT);
 
     var jdkClientElapsed = Duration.between(apacheClientStart, Instant.now());
     LOGGER.info("Apache HTTP Client processed the request in {}", jdkClientElapsed);
