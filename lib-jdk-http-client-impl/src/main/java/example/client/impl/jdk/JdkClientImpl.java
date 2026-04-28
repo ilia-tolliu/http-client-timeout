@@ -17,7 +17,7 @@ import example.shared.IncompleteResponse;
 import static example.shared.DeadlineCanceller.registerDeadlineCancellation;
 import static example.shared.Util.closeUnchecked;
 import static example.shared.Util.durationSince;
-import static java.lang.Character.LINE_SEPARATOR;
+import static java.lang.System.lineSeparator;
 import static java.util.Objects.isNull;
 
 public class JdkClientImpl {
@@ -59,7 +59,7 @@ public class JdkClientImpl {
             break;
           }
 
-          bodyBuilder.append(line).append(LINE_SEPARATOR);
+          bodyBuilder.append(line).append(lineSeparator());
           System.out.println(line);
         }
       } catch (IOException e) {
